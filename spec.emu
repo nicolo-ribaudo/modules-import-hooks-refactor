@@ -397,7 +397,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
               1. If _module_ is a Cyclic Module Record and _module_.[[Status]] is ~unlinked~, then
                 1. For each String _required_ of _module_.[[RequestedModules]], do
                   1. If there exists a Record _loaded_ in _module_.[[LoadedModules]] such that _loaded_.[[Specifier]] is _required_, then
-                    1. Perform InnerModuleLoading(_state_, _loaded_.[[Module]], _module_, _required_).
+                    1. Perform InnerModuleLoading(_state_, _loaded_.[[Module]]).
                   1. Set _state_.[[PendingModules]] to _state_.[[PendingModules]] + 1.
                   1. Perform HostLoadImportedModule(_module_, _required_, _state_).
               1. If _state_.[[PendingModules]] = 0, then
@@ -411,9 +411,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
               <ins>
                 ContinueModuleLoading (
                   _state_: a Record { [[Action]]: ~graph-loading~&comma; [[IsLoading]]: a Boolean&comma; [[PendingModules]]: an integer&comma; [[PromiseCapability]]: a PromiseCapability Record },
-                  _loadResult_: either a normal completion containing a Module Record or a throw completion,
-                  _parent_: a Cyclic Module Record,
-                  _specifier_: a String,
+                  _result_: either a normal completion containing a Module Record or a throw completion,
                 ): ~unused~
               </ins>
             </h1>
@@ -424,13 +422,13 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
 
             <emu-alg>
               1. If _state_.[[IsLoading]] is *false*, return.
-              1. If _loadResult_ is a normal completion, then
+              1. If _result_ is a normal completion, then
                 1. Assert: _state_.[[PendingModules]] &ge; 1.
                 1. Set _state_.[[PendingModules]] to _state_.[[PendingModules]] - 1.
-                1. Perform InnerModuleLoading(_state_, _result_.[[Value]], _parent_, _specifier_).
+                1. Perform InnerModuleLoading(_state_, _result_.[[Value]]).
               1. Else,
                 1. Set _state_.[[IsLoading]] to *false*.
-                1. Perform ! Call(_state_.[[PromiseCapability]].[[Reject]], *undefined*, &laquo; _error_ &raquo;).
+                1. Perform ! Call(_state_.[[PromiseCapability]].[[Reject]], *undefined*, &laquo; _result_.[[Value]] &raquo;).
             </emu-alg>
           </emu-clause>
         </emu-clause>
@@ -654,9 +652,9 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             1. Else, add Record { [[Specifier]]: _specifier_, [[Module]]: _result_.[[Value]] } to _referencingScriptOrModule_.[[LoadedModules]].
           1. If _payload_.[[Action]] is ~graph-loading~, then
             1. Assert: _referencingScriptOrModule_ is a Cyclic Module Record.
-            1. Perform ContinueModuleLoading(_payload_, _result_, _referencingScriptOrModule_, _specifier_).
+            1. Perform ContinueModuleLoading(_payload_, _result_).
           1. Else,
-            1. Perform ContinueDynamicImport(_payload_, _result_, _referencingScriptOrModule_, _specifier_).
+            1. Perform ContinueDynamicImport(_payload_, _result_).
         </emu-alg>
       </emu-clause>
 
@@ -666,8 +664,6 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             ContinueDynamicImport (
               _state_: a Record { [[Action]]: ~dynamic-import~&comma; [[PromiseCapability]]: a PromiseCapability Record },
               _module_: either a normal completion containing a Module Record or a throw completion,
-              _referencingScriptOrModule_: a Script Record, a Module Record or *null*,
-              _specifier_: a String,
             ): ~unused~
           </ins>
         </h1>
@@ -685,7 +681,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           1. IfAbruptRejectPromise(_link_, _promiseCapability_).
           1. Let _evaluate_ be Completion(Await(_module_.Evaluate())).
           1. IfAbruptRejectPromise(_evaluate_, _promiseCapability_).
-          1. Let _namespace_ be Completion(GetModuleNamespace(_moduleRecord_)).
+          1. Let _namespace_ be Completion(GetModuleNamespace(_module_)).
           1. IfAbruptRejectPromise(_namespace_, _state_.[[PromiseCapability]]).
           1. Perform ! Call(_promiseCapability_.[[Resolve]], *undefined*, &laquo; _namespace_ &raquo;).
           1. Return ~unused~.

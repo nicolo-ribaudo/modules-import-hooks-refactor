@@ -75,11 +75,42 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           1. IfAbruptRejectPromise(_specifierString_, _promiseCapability_).
           1. <del>Perform HostImportModuleDynamically(_referencingScriptOrModule_, _specifierString_, _promiseCapability_).</del>
           1. <ins>If _referencingScriptOrModule_ is not *null* and there exists a Record _record_ in _referencingScriptOrModule_.[[LoadedModules]] such that _record_.[[Specifier]] is _specifierString_, then</ins>
-            1. <ins>Perform ContinueDynamicImport(_state_, _record_.[[Module]]).</ins>
+            1. <ins>Perform ContinueDynamicImport(_state_, NormalCompletion(_record_.[[Module]])).</ins>
           1. <ins>Else,</ins>
             1. <ins>Perform HostLoadImportedModule(_referencingScriptOrModule_, _specifierString_, _state_).</ins>
+            1. <ins>NOTE: HostLoadImportedModule will call ContinueDynamicImport.</ins>
           1. Return _promiseCapability_.[[Promise]].
         </emu-alg>
+
+        <emu-clause id="sec-ContinueDynamicImport" type="abstract operation">
+          <h1>
+            <ins>
+              ContinueDynamicImport (
+                _state_: a Record { [[Action]]: ~dynamic-import~&comma; [[PromiseCapability]]: a PromiseCapability Record },
+                _module_: either a normal completion containing a Module Record or a throw completion,
+              ): ~unused~
+            </ins>
+          </h1>
+          <dl class="header">
+            <dt>description</dt>
+            <dd>ContinueDynamicImport completes the process of a dynamic import originally started by an <emu-xref href="#sec-import-calls">`import()`</emu-xref> call, resolving or rejecting the promise returned by that call as appropriate according to _innerPromise_'s resolution.</dd>
+          </dl>
+          <emu-alg>
+            1. Let _promiseCapability_ be _state_.[[PromiseCapability]].
+            1. IfAbruptRejectPromise(_module_, _promiseCapability_).
+            1. If _module_ is a Cyclic Module Record, then
+              1. Let _load_ be Completion(Await(_module_.LoadRequestedModules())).
+              1. IfAbruptRejectPromise(_load_, _promiseCapability_).
+            1. Let _link_ be Completion(_module_.Link()).
+            1. IfAbruptRejectPromise(_link_, _promiseCapability_).
+            1. Let _evaluate_ be Completion(Await(_module_.Evaluate())).
+            1. IfAbruptRejectPromise(_evaluate_, _promiseCapability_).
+            1. Let _namespace_ be Completion(GetModuleNamespace(_module_)).
+            1. IfAbruptRejectPromise(_namespace_, _state_.[[PromiseCapability]]).
+            1. Perform ! Call(_promiseCapability_.[[Resolve]], *undefined*, &laquo; _namespace_ &raquo;).
+            1. Return ~unused~.
+          </emu-alg>
+        </emu-clause>
       </emu-clause>
     </emu-clause>
   </emu-clause>
@@ -403,6 +434,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
                     1. Perform InnerModuleLoading(_state_, _loaded_.[[Module]]).
                   1. Else,
                     1. Perform HostLoadImportedModule(_module_, _required_, _state_).
+                    1. NOTE: HostLoadImportedModule will call ContinueModuleLoading.
               1. Assert: _state_.[[PendingModules]] &ge; 1.
               1. Set _state_.[[PendingModules]] to _state_.[[PendingModules]] - 1.
               1. If _state_.[[PendingModules]] = 0, then
@@ -659,36 +691,6 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             1. Perform ContinueModuleLoading(_payload_, _result_).
           1. Else,
             1. Perform ContinueDynamicImport(_payload_, _result_).
-        </emu-alg>
-      </emu-clause>
-
-      <emu-clause id="sec-ContinueDynamicImport" type="abstract operation">
-        <h1>
-          <ins>
-            ContinueDynamicImport (
-              _state_: a Record { [[Action]]: ~dynamic-import~&comma; [[PromiseCapability]]: a PromiseCapability Record },
-              _module_: either a normal completion containing a Module Record or a throw completion,
-            ): ~unused~
-          </ins>
-        </h1>
-        <dl class="header">
-          <dt>description</dt>
-          <dd>ContinueDynamicImport completes the process of a dynamic import originally started by an <emu-xref href="#sec-import-calls">`import()`</emu-xref> call, resolving or rejecting the promise returned by that call as appropriate according to _innerPromise_'s resolution.</dd>
-        </dl>
-        <emu-alg>
-          1. Let _promiseCapability_ be _state_.[[PromiseCapability]].
-          1. IfAbruptRejectPromise(_module_, _promiseCapability_).
-          1. If _module_ is a Cyclic Module Record, then
-            1. Let _load_ be Completion(Await(_module_.LoadRequestedModules())).
-            1. IfAbruptRejectPromise(_load_, _promiseCapability_).
-          1. Let _link_ be Completion(_module_.Link()).
-          1. IfAbruptRejectPromise(_link_, _promiseCapability_).
-          1. Let _evaluate_ be Completion(Await(_module_.Evaluate())).
-          1. IfAbruptRejectPromise(_evaluate_, _promiseCapability_).
-          1. Let _namespace_ be Completion(GetModuleNamespace(_module_)).
-          1. IfAbruptRejectPromise(_namespace_, _state_.[[PromiseCapability]]).
-          1. Perform ! Call(_promiseCapability_.[[Resolve]], *undefined*, &laquo; _namespace_ &raquo;).
-          1. Return ~unused~.
         </emu-alg>
       </emu-clause>
     </emu-clause>

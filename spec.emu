@@ -75,7 +75,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           1. IfAbruptRejectPromise(_specifierString_, _promiseCapability_).
           1. <del>Perform HostImportModuleDynamically(_referencingScriptOrModule_, _specifierString_, _promiseCapability_).</del>
           1. <ins>If _referencingScriptOrModule_ is not *null* and there exists a Record _record_ in _referencingScriptOrModule_.[[LoadedModules]] such that _record_.[[Specifier]] is _specifierString_, then</ins>
-            1. <ins>Perform ContinueDynamicImport(_state_, _record_.[[Module]], _referencingScriptOrModule_, _specifierString_).</ins>
+            1. <ins>Perform ContinueDynamicImport(_state_, _record_.[[Module]]).</ins>
           1. <ins>Else,</ins>
             1. <ins>Perform HostLoadImportedModule(_referencingScriptOrModule_, _specifierString_, _state_).</ins>
           1. Return _promiseCapability_.[[Promise]].
@@ -611,7 +611,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             1. Let _fulfilledClosure_ be a new Abstract Closure with parameters (_result_) that captures _referencingScriptOrModule_, _specifier_, and <del>_promiseCapability_</del><ins>_state_</ins> and performs the following steps when called:
               1. Assert: _result_ is *undefined*.
               1. Let _moduleRecord_ be ! HostResolveImportedModule(_referencingScriptOrModule_, _specifier_).
-              1. <ins>Perform ContinueDynamicImport(_state_, NormalCompletion(_moduleRecord_), _referencingScriptOrModule_, _specifier_).</ins>
+              1. <ins>Perform ContinueDynamicImport(_state_, NormalCompletion(_moduleRecord_)).</ins>
               1. <del>Assert: Evaluate has already been invoked on _moduleRecord_ and successfully completed.</del>
               1. <del>Let _namespace_ be Completion(GetModuleNamespace(_moduleRecord_)).</del>
               1. <del>If _namespace_ is an abrupt completion, then</del>
@@ -622,7 +622,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             1. Let _onFulfilled_ be CreateBuiltinFunction(_fulfilledClosure_, 0, *""*, &laquo; &raquo;).
             1. Let _rejectedClosure_ be a new Abstract Closure with parameters (_error_) that captures <del>_promiseCapability_</del><ins>_referencingScriptOrModule_, _specifier_, and _state_</ins> and performs the following steps when called:
               1. <del>Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, &laquo; _error_ &raquo;).</del>
-              1. <ins>Perform ContinueDynamicImport(_state_, ThrowCompletion(_error_), _referencingScriptOrModule_, _specifier_).</ins>
+              1. <ins>Perform ContinueDynamicImport(_state_, ThrowCompletion(_error_)).</ins>
               1. Return ~unused~.
             1. Let _onRejected_ be CreateBuiltinFunction(_rejectedClosure_, 0, *""*, &laquo; &raquo;).
             1. Perform PerformPromiseThen(_innerPromise_, _onFulfilled_, _onRejected_).

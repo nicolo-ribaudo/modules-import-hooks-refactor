@@ -70,10 +70,10 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           1. Let _argRef_ be the result of evaluating |AssignmentExpression|.
           1. Let _specifier_ be ? GetValue(_argRef_).
           1. Let _promiseCapability_ be ! NewPromiseCapability(%Promise%).
+          1. <ins>Let _state_ be a new Record { [[Action]]: ~dynamic-import~, [[PromiseCapability]]: _promiseCapability_ }.</ins>
           1. Let _specifierString_ be Completion(ToString(_specifier_)).
           1. IfAbruptRejectPromise(_specifierString_, _promiseCapability_).
           1. <del>Perform HostImportModuleDynamically(_referencingScriptOrModule_, _specifierString_, _promiseCapability_).</del>
-          1. <ins>Let _state_ be a new Record { [[Action]]: ~dynamic-import~, [[PromiseCapability]]: _promiseCapability_ }.</ins>
           1. <ins>If _referencingScriptOrModule_ is not *null* and there exists a Record _record_ in _referencingScriptOrModule_.[[LoadedModules]] such that _record_.[[Specifier]] is _specifierString_, then</ins>
             1. <ins>Perform ContinueDynamicImport(_state_, _record_.[[Module]], _referencingScriptOrModule_, _specifierString_).</ins>
           1. <ins>Else,</ins>
@@ -458,7 +458,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
         </emu-alg>
 
         <emu-note type="editor">
-          Replace every occurrence of HostResolveImportedModule with ResolveImportedModule, except for the invocation in HostLoadImportedModule.
+          Replace every occurrence of HostResolveImportedModule with ResolveImportedModule, except for the invocation in the default implementation of HostLoadImportedModule.
         </emu-note>
       </emu-clause>
 
@@ -476,6 +476,14 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           <dt>description</dt>
           <dd></dd>
         </dl>
+
+        <emu-note>
+          <p>An example of when _referencingScriptOrModule_ can be *null* is in a web browser host. There, if a user clicks on a control given by</p>
+
+          <pre><code class="html">&lt;button type="button" onclick="import('./foo.mjs')"&gt;Click me&lt;/button&gt;</code></pre>
+
+          <p>there will be no active script or module at the time the <emu-xref href="#sec-import-calls">`import()`</emu-xref> expression runs. More generally, this can happen in any situation where the host pushes execution contexts with *null* ScriptOrModule components onto the execution context stack.</p>
+        </emu-note>
 
         <p>An implementation of HostLoadImportedModule must conform to the following requirements:</p>
         <ul>
@@ -518,14 +526,6 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             <dt>description</dt>
             <dd>It provides the concrete Module Record subclass instance that corresponds to _specifier_ occurring within the context of the script or module represented by _referencingScriptOrModule_. _referencingScriptOrModule_ may be *null* if the resolution is being performed in the context of an <emu-xref href="#sec-import-calls">`import()`</emu-xref> expression and there is no active script or module at that time.</dd>
           </dl>
-
-          <emu-note>
-            <p>An example of when _referencingScriptOrModule_ can be *null* is in a web browser host. There, if a user clicks on a control given by</p>
-
-            <pre><code class="html">&lt;button type="button" onclick="import('./foo.mjs')"&gt;Click me&lt;/button&gt;</code></pre>
-
-            <p>there will be no active script or module at the time the <emu-xref href="#sec-import-calls">`import()`</emu-xref> expression runs. More generally, this can happen in any situation where the host pushes execution contexts with *null* ScriptOrModule components onto the execution context stack.</p>
-          </emu-note>
 
           <p>An implementation of HostResolveImportedModule must conform to the following requirements:</p>
           <ul>
@@ -649,6 +649,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
         <emu-alg>
           1. If _referencingScriptOrModule_ is not *null* and _result_ is a normal completion, then
             1. If _referencingScriptOrModule_.[[LoadedModules]] contains a Record _record_ such that _record_.[[Specifier]] is _specifier_, then
+              1. NOTE: This can happen when triggering two parallel imports of the same _specifier_ from the same _referencingScriptOrModule_.
               1. Assert: _record_.[[Module]] is _result_.[[Value]].
             1. Else, add Record { [[Specifier]]: _specifier_, [[Module]]: _result_.[[Value]] } to _referencingScriptOrModule_.[[LoadedModules]].
           1. If _payload_.[[Action]] is ~graph-loading~, then

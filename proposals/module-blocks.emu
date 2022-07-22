@@ -1,0 +1,125 @@
+<!doctype html>
+<meta charset="utf8">
+<link rel="stylesheet" href="./spec.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
+<pre class="metadata">
+title: JavaScript Module Blocks
+stage: 2
+contributors: Surma, Dan Ehrenberg, Nicolò Ribaudo
+</pre>
+
+<emu-note type="editor">
+  This document is a diff on top of the <a href="https://nicolo-ribaudo.github.io/modules-import-hooks-refactor/">Modules Host Hooks Refactor</a>.
+</emu-note>
+
+<emu-clause id="sec-primary-expression">
+  <h1>Primary Expression</h1>
+  <h2>Syntax</h2>
+  <emu-grammar type="definition">
+    PrimaryExpression[Yield, Await] :
+      IdentifierReference[?Yield, ?Await]
+      Literal
+      ArrayLiteral[?Yield, ?Await]
+      ObjectLiteral[?Yield, ?Await]
+      FunctionExpression
+      ClassExpression[?Yield, ?Await]
+      GeneratorExpression
+      AsyncFunctionExpression
+      AsyncGeneratorExpression
+      <ins>ModuleBlockExpression</ins>
+      RegularExpressionLiteral
+      TemplateLiteral[?Yield, ?Await, ~Tagged]
+      CoverParenthesizedExpressionAndArrowParameterList[?Yield, ?Await] #parencover
+  </emu-grammar>
+</emu-clause>
+
+<emu-clause id="sec-module-block-definitions">
+  <h1>Module Block Definitions</h1>
+  <h2>Syntax</h2>
+  <emu-grammar type="definition">
+    ModuleBlockExpression :
+      `module` [no LineTerminator here] `{` ModuleBody? `}`
+  </emu-grammar>
+
+  <emu-clause id="sec-module-block-definitions-runtime-semantics-evaluation">
+    <h1>Runtime Semantics: Evaluation</h1>
+    <emu-grammar>ModuleBlockExpression: `module` `{` ModuleBody `}`</emu-grammar>
+    <emu-alg>
+      1. Let _moduleBlock_ be OrdinaryObjectCreate(%ModuleBlock.prototype%, &laquo; [[ModuleRecord]], [[SourceText]] &raquo;).
+      1. Let _body_ be the source text matched by |ModuleBody|.
+      1. Let _realm_ be the current Realm Record.
+      1. Let _currentScriptOrModule_ be GetActiveScriptOrModule().
+      1. If _currentScriptOrModule_ is *null*, let _hostDefined_ be *null*.
+      1. Else, let _hostDefined_ be _currentScriptOrModule_.[[HostDefined]].
+      1. Let _moduleRecord_ be ParseModule(_body_, _realm_, _hostDefined_).
+      1. Assert: _moduleRecord_ is a Module Record, because parse errors would have been reported when parsing the outer script or module.
+      1. Set _moduleBlock_.[[ModuleRecord]] to _moduleRecord_.
+      1. Set _moduleBlock_.[[SourceText]] to the source text matched by |ModuleBlockExpression|.
+      1. Return _moduleBlock_.
+    </emu-alg>
+  </emu-clause>
+</emu-clause>
+
+<emu-clause id="sec-moduleblock">
+  <h1>ModuleBlock ( _body_ )</h1>
+  <emu-alg>
+    1. Throw a *TypeError* exception.
+  </emu-alg>
+</emu-clause>
+
+<emu-clause id="sec-moduleblock.prototype">
+  <h1>ModuleBlock.prototype</h1>
+  <p>The initial value of `ModuleBlock.prototype` is the ModuleBlock prototype object.</p>
+  <p>This property has the attributes { [[Writable]]: *false*, [[Enumerable]]: *false*, [[Configurable]]: *false* }.</p>
+</emu-clause>
+
+<emu-clause id="sec-properties-of-the-moduleblock-prototype-object">
+  <h1>Properties of the ModuleBlock Prototype Object</h1>
+  <p>The <dfn>ModuleBlock prototype object</dfn>:</p>
+  <ul>
+    <li>is <dfn>%ModuleBlock.prototype%</dfn>.</li>
+    <li>has a [[Prototype]] internal slot whose value is %Object.prototype%.</li>
+    <li>is an ordinary object.</li>
+  </ul>
+
+  <emu-clause id="sec-moduleblock.prototype.tostring">
+    <h1>ModuleBlock.prototype.toString ( )</h1>
+    <p>The following steps are taken:</p>
+    <emu-alg>
+      1. Let _module_ be the *this* value.
+      1. If Type(_module_) is Object and has the internal slot [[ModuleRecord]], then
+        1. Return _module_.[[SourceText]].
+      1. Throw a *TypeError* exception.
+    </emu-alg>
+  </emu-clause>
+</emu-clause>
+
+<emu-clause id="sec-import-calls">
+  <h1>Import Calls</h1>
+
+  <emu-clause id="sec-import-call-runtime-semantics-evaluation">
+    <h1>Runtime Semantics: Evaluation</h1>
+
+    <emu-grammar>ImportCall : `import` `(` AssignmentExpression `)`</emu-grammar>
+    <emu-alg>
+      1. Let _referencingScriptOrModule_ be GetActiveScriptOrModule().
+      1. Let _argRef_ be the result of evaluating |AssignmentExpression|.
+      1. Let _specifier_ be ? GetValue(_argRef_).
+      1. Let _promiseCapability_ be ! NewPromiseCapability(%Promise%).
+      1. Let _state_ be a new Record { [[Action]]: ~dynamic-import~, [[PromiseCapability]]: _promiseCapability_ }.
+      1. <ins>If Type(_specifier_) is Object and _specifier_ has a [[ModuleRecord]] internal slot, then</ins>
+        1. <ins>If _specifier_.[[ModuleRecord]].[[Realm]] is not the current Realm Record, then</ins>
+          1. <ins>Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, « a newly created *TypeError* object »).</ins>
+        1. <ins>Else,</ins>
+          1. <ins>Perform ContinueDynamicImport(_state_, _specifier_.[[ModuleRecord]]).</ins>
+      1. <ins>Else,</ins>
+        1. Let _specifierString_ be Completion(ToString(_specifier_)).
+        1. IfAbruptRejectPromise(_specifierString_, _promiseCapability_).
+        1. If _referencingScriptOrModule_ is not *null* and there exists a Record _record_ in _referencingScriptOrModule_.[[LoadedModules]] such that _record_.[[Specifier]] is _specifierString_, then
+          1. Perform ContinueDynamicImport(_state_, _record_.[[Module]]).
+        1. Else,
+          1. Perform HostLoadImportedModule(_referencingScriptOrModule_, _specifierString_, _state_).
+      1. Return _promiseCapability_.[[Promise]].
+    </emu-alg>
+  </emu-clause>
+</emu-clause>

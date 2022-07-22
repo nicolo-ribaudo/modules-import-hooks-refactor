@@ -3,9 +3,12 @@
   "name": "template-for-proposals",
   "description": "A repository template for ECMAScript proposals.",
   "scripts": {
-    "start": "npm run build-loose -- --watch",
-    "build": "npm run build-loose -- --strict",
-    "build-loose": "ecmarkup --load-biblio @tc39/ecma262-biblio --verbose spec.emu index.html --lint-spec"
+    "build": "npm run build:top && npm run build:module-blocks",
+    "start": "npm run build-loose:top -- --watch",
+    "build:top": "npm run build-loose:top -- --strict",
+    "build-loose:top": "ecmarkup --load-biblio @tc39/ecma262-biblio --verbose spec.emu index.html --lint-spec --write-biblio ./biblio.json",
+    "build:module-blocks": "npm run build-loose:module-blocks -- --strict",
+    "build-loose:module-blocks": "ecmarkup --load-biblio @tc39/ecma262-biblio --load-biblio ./biblio.json --verbose ./proposals/module-blocks.emu ./proposals/module-blocks.html --lint-spec"
   },
   "homepage": "https://github.com/tc39/template-for-proposals#readme",
   "repository": {

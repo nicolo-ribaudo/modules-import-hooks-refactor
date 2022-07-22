@@ -391,7 +391,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
         <emu-clause id="sec-LoadRequestedModules" type="concrete method">
           <h1>
             <ins>
-              LoadRequestedModules ( ): a Promise object
+              LoadRequestedModules ( [ _hostDefined_ ] ): a Promise object
             </ins>
           </h1>
           <dl class="header">
@@ -399,21 +399,27 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             <dd>a Cyclic Module Record _module_</dd>
 
             <dt>description</dt>
-            <dd>It populates the [[LoadedModules]] of all the Modue Records in the dependency graph of _module_. (Most of the work is done by the auxiliary function InnerModuleLoading.)</dd>
+            <dd>It populates the [[LoadedModules]] of all the Modue Records in the dependency graph of _module_ (most of the work is done by the auxiliary function InnerModuleLoading). It takes an optional _hostDefined_ parameter, that is passed to the HostLoadImportedModule hook.</dd>
           </dl>
 
           <emu-alg>
+            1. If _hostDefined_ is not present, let _hostDefined_ be *undefined*.
             1. Let _pc_ be ! NewPromiseCapability(%Promise%).
-            1. Let _state_ be a new Record { [[Action]]: ~graph-loading~, [[IsLoading]]: *true*, [[PendingModules]]: 1, [[Visited]]: a new empty List, [[PromiseCapability]]: _pc_ }.
+            1. Let _state_ be a new Record { [[Action]]: ~graph-loading~, [[IsLoading]]: *true*, [[PendingModules]]: 1, [[Visited]]: a new empty List, [[PromiseCapability]]: _pc_, [[HostDefined]]: _hostDefined_ }.
             1. Perform InnerModuleLoading(_state_, _module_).
             1. Return _pc_.[[Promise]].
           </emu-alg>
+
+          <emu-note>
+            The _hostDefined_ parameter can be used to pass additional information necessary to fetch the imported modules. It is used, for example, by HTML to set the correct fetch destination for <code>&lt;link rel="preload" as="..."&gt;</code> tags.
+            Note that <code>import()</code> expressions never set the _hostDefined_ parameter.
+          </emu-note>
 
           <emu-clause id="sec-InnerModuleLoading" type="abstract operation">
             <h1>
               <ins>
                 InnerModuleLoading (
-                  _state_: a Record { [[Action]]: ~graph-loading~&comma; [[IsLoading]]: a Boolean&comma; [[PendingModules]]: an integer&comma; [[Visited]]: a List of Cyclic Module Records&comma; [[PromiseCapability]]: a PromiseCapability Record },
+                  _state_: a Record { [[Action]]: ~graph-loading~&comma; [[IsLoading]]: a Boolean&comma; [[PendingModules]]: an integer&comma; [[Visited]]: a List of Cyclic Module Records&comma; [[PromiseCapability]]: a PromiseCapability Record&comma; [[HostDefined]]: unknown },
                   _module_: a Module Record,
                 ): ~unused~
               </ins>
@@ -433,7 +439,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
                   1. If there exists a Record _loaded_ in _module_.[[LoadedModules]] such that _loaded_.[[Specifier]] is _required_, then
                     1. Perform InnerModuleLoading(_state_, _loaded_.[[Module]]).
                   1. Else,
-                    1. Perform HostLoadImportedModule(_module_, _required_, _state_).
+                    1. Perform HostLoadImportedModule(_module_, _required_, _state_.[[HostDefined]], _state_).
                     1. NOTE: HostLoadImportedModule will call ContinueModuleLoading.
               1. Assert: _state_.[[PendingModules]] &ge; 1.
               1. Set _state_.[[PendingModules]] to _state_.[[PendingModules]] - 1.
@@ -447,7 +453,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             <h1>
               <ins>
                 ContinueModuleLoading (
-                  _state_: a Record { [[Action]]: ~graph-loading~&comma; [[IsLoading]]: a Boolean&comma; [[PendingModules]]: an integer&comma; [[Visited]]: a List of Cyclic Module Records&comma; [[PromiseCapability]]: a PromiseCapability Record },
+                  _state_: a Record { [[Action]]: ~graph-loading~&comma; [[IsLoading]]: a Boolean&comma; [[PendingModules]]: an integer&comma; [[Visited]]: a List of Cyclic Module Records&comma; [[PromiseCapability]]: a PromiseCapability Record&comma; [[HostDefined]]: unknown },
                   _result_: either a normal completion containing a Module Record or a throw completion,
                 ): ~unused~
               </ins>
@@ -628,6 +634,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             HostLoadImportedModule (
               _referencingScriptOrModule_: a Script Record, a Cyclic Module Record, or *null*,
               _specifier_: a String,
+              _hostDefined_: unknown,
               _payload_: a Record with an [[Action]] field whose value is ~graph-loading~ or ~dynamic-import~,
             ): ~unused~
           </ins>

@@ -100,7 +100,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           <emu-alg>
             1. Let _promiseCapability_ be _state_.[[PromiseCapability]].
             1. IfAbruptRejectPromise(_module_, _promiseCapability_).
-            1. If _module_ is a Cyclic Module Record, then
+            1. If _module_ is a Cyclic Module Record and _module_.[[Status]] is ~new~, then
               1. Let _load_ be Completion(Await(_module_.LoadRequestedModules())).
               1. IfAbruptRejectPromise(_load_, _promiseCapability_).
             1. Let _link_ be Completion(_module_.Link()).

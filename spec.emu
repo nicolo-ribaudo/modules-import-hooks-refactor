@@ -71,7 +71,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           1. Let _argRef_ be the result of evaluating |AssignmentExpression|.
           1. Let _specifier_ be ? GetValue(_argRef_).
           1. Let _promiseCapability_ be ! NewPromiseCapability(%Promise%).
-          1. <ins>Let _state_ be a new Record { [[Action]]: ~dynamic-import~, [[PromiseCapability]]: _promiseCapability_ }.</ins>
+          1. <ins>Let _state_ be a new ModuleLoadState Record { [[Action]]: ~dynamic-import~, [[PromiseCapability]]: _promiseCapability_ }.</ins>
           1. Let _specifierString_ be Completion(ToString(_specifier_)).
           1. IfAbruptRejectPromise(_specifierString_, _promiseCapability_).
           1. <del>Perform HostImportModuleDynamically(_referencingScriptOrModule_, _specifierString_, _promiseCapability_).</del>
@@ -88,7 +88,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           <h1>
             <ins>
               ContinueDynamicImport (
-                _state_: a Record { [[Action]]: ~dynamic-import~&comma; [[PromiseCapability]]: a PromiseCapability Record },
+                _state_: a ModuleLoadState Record whose [[Action]] is ~dynamic-import~,
                 _module_: either a normal completion containing a Module Record or a throw completion,
               ): ~unused~
             </ins>
@@ -174,7 +174,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
                 <ins>[[LoadedModules]]</ins>
               </td>
               <td>
-                <ins>a List of Record { [[Specifier]]: a String, [[Module]]: a Module Record }</ins>
+                <ins>a List of Records { [[Specifier]]: a String, [[Module]]: a Module Record }</ins>
               </td>
               <td>
                 <ins>A map from the specifier strings imported by this script to the resolved Module Record. The list does not contain two different Records with the same [[Specifier]].</ins>
@@ -392,6 +392,89 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           </table>
         </emu-table>
 
+        <p><ins>A <dfn id="moduleloadstate-record" variants="ModuleLoadState Records">ModuleLoadState Record</dfn> is a Record that contains information about the loading process of a module graph. It's used to continue loading after a call to HostLoadImportedModule. Each ModuleLoadState Record has the fields defined in <emu-xref href="#table-moduleloadstate-record-fields"></emu-xref>:</ins></p>
+        <emu-table id="table-moduleloadstate-record-fields" caption="ModuleLoadState Record Fields">
+          <table>
+            <tr>
+              <th>
+                Field Name
+              </th>
+              <th>
+                Value Type
+              </th>
+              <th>
+                Meaning
+              </th>
+            </tr>
+            <tr>
+              <td>
+                <ins>[[Action]]</ins>
+              </td>
+              <td>
+                <ins>~graph-loading~ or ~dynamic-import~</ins>
+              </td>
+              <td>
+                <ins>The action that caused the call to HostLoadImportedModule. It's ~graph-loading~ when loading the dependencies of a module; it's ~dynamic-import~ when loading a module that was requested by an `import()` call.</ins>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <ins>[[PromiseCapability]]</ins>
+              </td>
+              <td>
+                <ins>a PromiseCapability Record</ins>
+              </td>
+              <td>
+                <ins>The promise to resolve when the loading process finishes.</ins>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <ins>[[IsLoading]]</ins>
+              </td>
+              <td>
+                <ins>a boolean</ins>
+              </td>
+              <td>
+                <ins>This field is only used if [[Action]] is ~graph-loading~. It is true if the loading process has not finished yet, neither successfully nor with an error.</ins>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <ins>[[PendingModules]]</ins>
+              </td>
+              <td>
+                <ins>a non-negative integer</ins>
+              </td>
+              <td>
+                <ins>This field is only used if [[Action]] is ~graph-loading~. It tracks the number of pending HostResolveImportedModule calls.</ins>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <ins>[[Visited]]</ins>
+              </td>
+              <td>
+                <ins>a List of Cyclic Module Records</ins>
+              </td>
+              <td>
+                <ins>This field is only used if [[Action]] is ~graph-loading~. It is a list of the Cyclic Module Records that have been already loaded by the current loading process, to avoid infinite loops with circular dependencies.</ins>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <ins>[[HostDefined]]</ins>
+              </td>
+              <td>
+                <ins>~unknown~</ins>
+              </td>
+              <td>
+                <ins>This field is only used if [[Action]] is ~dynamic-import~. It contains host-defined data to pass from the LoadRequestedModules caller to HostLoadImportedModule.</ins>
+              </td>
+            </tr>
+          </table>
+        </emu-table>
+
         <emu-clause id="sec-LoadRequestedModules" type="concrete method">
           <h1>
             <ins>
@@ -409,7 +492,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           <emu-alg>
             1. If _hostDefined_ is not present, let _hostDefined_ be *undefined*.
             1. Let _pc_ be ! NewPromiseCapability(%Promise%).
-            1. Let _state_ be a new Record { [[Action]]: ~graph-loading~, [[IsLoading]]: *true*, [[PendingModules]]: 1, [[Visited]]: a new empty List, [[PromiseCapability]]: _pc_, [[HostDefined]]: _hostDefined_ }.
+            1. Let _state_ be a new ModuleLoadState Record { [[Action]]: ~graph-loading~, [[IsLoading]]: *true*, [[PendingModules]]: 1, [[Visited]]: a new empty List, [[PromiseCapability]]: _pc_, [[HostDefined]]: _hostDefined_ }.
             1. Perform InnerModuleLoading(_state_, _module_).
             1. Return _pc_.[[Promise]].
           </emu-alg>
@@ -423,7 +506,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             <h1>
               <ins>
                 InnerModuleLoading (
-                  _state_: a Record { [[Action]]: ~graph-loading~&comma; [[IsLoading]]: a Boolean&comma; [[PendingModules]]: an integer&comma; [[Visited]]: a List of Cyclic Module Records&comma; [[PromiseCapability]]: a PromiseCapability Record&comma; [[HostDefined]]: unknown },
+                  _state_: a ModuleLoadState Record whose [[Action]] is ~graph-loading~,
                   _module_: a Module Record,
                 ): ~unused~
               </ins>
@@ -460,7 +543,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             <h1>
               <ins>
                 ContinueModuleLoading (
-                  _state_: a Record { [[Action]]: ~graph-loading~&comma; [[IsLoading]]: a Boolean&comma; [[PendingModules]]: an integer&comma; [[Visited]]: a List of Cyclic Module Records&comma; [[PromiseCapability]]: a PromiseCapability Record&comma; [[HostDefined]]: unknown },
+                  _state_: a ModuleLoadState Record whose [[Action]] is ~graph-loading~,
                   _result_: either a normal completion containing a Module Record or a throw completion,
                 ): ~unused~
               </ins>

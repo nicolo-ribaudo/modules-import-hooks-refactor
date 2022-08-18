@@ -1,6 +1,6 @@
 # Refactor of import-related host hooks
 
-ECMA-262 currently exposes two hooks related to modules loading: [`HostResolveImportedModule`](https://tc39.es/ecma262/#sec-hostresolveimportedmodule) and `HostImportModuleDynamically`.
+ECMA-262 currently exposes two hooks related to modules loading: [`HostResolveImportedModule`](https://tc39.es/ecma262/#sec-hostresolveimportedmodule) and [`HostImportModuleDynamically`](https://tc39.es/ecma262/#sec-hostimportmoduledynamically).
 
 `HostResolveImportedModule(referencingScriptOrModule, specifier)` synchronously resolves an imported module and returns the corresponding module record. While module resolution and loading is _usually_ asynchronous, this was a good enough abstraction for the ES2015 modules specification: before evaluating a module, hosts could pre-build the module graph before evaluating a module and asynchronously load all its dependencies. This asynchronous step was not observable from ECMA-262, whose algorithms where only run once all the dependencies where synchronously available.
 
@@ -36,7 +36,35 @@ where **host or ECMA-262** means "host if the algorithm is run by an host-define
 
 ## Motivation
 
-TODO
+This refactor has two benefits on its own: it reduces the amount of behavior delegated to the host, by taking ownership of the loading steps shared across all the hosts that use asynchronous loading.
+
+However, it's most useful for some current proposals that introduce the concept of a "module whose dependencies have not been loaded yet":
+- [Module Blocks](https://github.com/tc39/proposal-js-module-blocks) and [Compartments](https://github.com/tc39/proposal-compartments) need a new host hook to "load the dependencies of an already loaded module" ([`HostImportModuleRecordDynamically`](https://tc39.es/proposal-compartments/0-module-and-module-source.html#sec-hostimportmodulerecorddynamically));
+- [Import Reflection](https://github.com/tc39/proposal-import-reflection) needs a new host hook to "load a module without loading its dependencies" ([`HostResolveModuleReflection`](https://tc39.es/proposal-import-reflection/#sec-hostresolvemodulereflection)).
+
+`HostLoadImpotedModule` is low-level enough that it already satisfies those use cases:
+- Module Blocks and Compartments can recursively call `HostLoadImportedModule` on the dependencies of the unlinked module;
+- Import Reflection can use `HostLoadImportedModule` to load a single module without recursively loading its dependencies.
+
+This refactor reduces the number of loading-related host hooks from 2 to 1, and prevents it from growing to 4 in the future.
+
+## Constraints
+
+This refactor should not force module loading to be asynchronous:
+- For hosts that currently load modules synchronously, forcing a promise tick for each recursive dependency might cause a big performance regression.
+- Some hosts (for example, [Bun](TODO: Link)) allow synchronously importing modules that don't use top-level await, by relying on the fact that `module.Evaluate()` returns a resolved promise and synchronously inspecting is value.
+
+With this refactor both are still possible: `HostLoadImportedModule` can synchronously give control back to ECMA-262 (reusing the same logic they had in `HostResolveImportedModule`) to synchronously continue the loading process. The new `module.LoadRequestedModules()` will then return a resolved promise.
+
+Hosts can still implement synchronous import of modules:
+1. Load the module.
+1. Call `module.LoadRequestedModules()`, which returns a `loadPromise`.
+1. If `loadPromise.[[Status]]` is `rejected`, throw; otherwise it's `fulfilled`.
+1. Call `module.Link()`.
+1. Call `module.Evaluate()`, which returns a `evalPromise`.
+1. If `evalPromise.[[Status]]` is `rejected`, throw.
+1. If `evalPromise.[[Status]]` is `pending`, throw (it's using top-level await).
+1. Return `GetModuleNamespace(module)`.
 
 ## Is this normative or editorial?
 

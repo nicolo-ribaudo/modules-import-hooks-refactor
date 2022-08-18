@@ -96,9 +96,20 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           </td>
           <td>
             <ins>A map from the specifier strings imported by this realm to the resolved Module Record. The list does not contain two different Records with the same [[Specifier]].</ins>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <ins>[[LoadingModules]]</ins>
+          </td>
+          <td>
+            <ins>a List of Records { [[Specifier]]: a String, [[LoadStates]]: a List of ModuleLoadState Records }</ins>
+          </td>
+          <td>
+            <ins>A map from the specifier strings imported by this realm to the loading processes that are waiting for the resolved module record. It is used to avoid multiple calls to HostLoadImportedModule with the same (_specifier_, _referrer_) pair. The list does not contain two different Records with the same [[Specifier]].</ins>
 
             <emu-note>
-              <ins>As mentioned in HostLoadImportedModule, [[LoadedModules]] in Realm Records is only used when running an `import()` expression in a context where there is no active script or module.</ins>
+              <ins>As mentioned in HostLoadImportedModule, [[LoadedModules]] and [[LoadingModules]] in Realm Records are only used when running an `import()` expression in a context where there is no active script or module.</ins>
             </emu-note>
           </td>
         </tr>
@@ -154,7 +165,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           1. IfAbruptRejectPromise(_specifierString_, _promiseCapability_).
           1. <del>Perform HostImportModuleDynamically(_referencingScriptOrModule_, _specifierString_, _promiseCapability_).</del>
           1. <ins>Let _state_ be a new ModuleLoadState Record { [[Action]]: ~dynamic-import~, [[PromiseCapability]]: _promiseCapability_ }.</ins>
-          1. <ins>Perform LoadImportedModule(_referrer_, _specifierString_, _state_.[[HostDefined]], _state_).</ins>
+          1. <ins>Perform LoadImportedModule(_referrer_, _specifierString_, _state_).</ins>
           1. <ins>NOTE: LoadImportedModule will call ContinueDynamicImport.</ins>
           1. Return _promiseCapability_.[[Promise]].
         </emu-alg>
@@ -276,6 +287,17 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           </tr>
           <tr>
             <td>
+              <ins>[[LoadingModules]]</ins>
+            </td>
+            <td>
+              <ins>a List of Records { [[Specifier]]: a String, [[LoadStates]]: a List of ModuleLoadState Records }</ins>
+            </td>
+            <td>
+              <ins>A map from the specifier strings imported by this script to the loading processes that are waiting for the resolved module record. It is used to avoid multiple calls to HostLoadImportedModule with the same (_specifier_, _referrer_) pair. The list does not contain two different Records with the same [[Specifier]].</ins>
+            </td>
+          </tr>
+          <tr>
+            <td>
               [[HostDefined]]
             </td>
             <td>
@@ -303,7 +325,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
       <emu-alg>
         1. Let _script_ be ParseText(_sourceText_, |Script|).
         1. If _script_ is a List of errors, return _script_.
-        1. Return Script Record { [[Realm]]: _realm_, [[ECMAScriptCode]]: _script_, <ins>[[LoadedModules]]: a new empty List,</ins> [[HostDefined]]: _hostDefined_ }.
+        1. Return Script Record { [[Realm]]: _realm_, [[ECMAScriptCode]]: _script_, <ins>[[LoadedModules]]: a new empty List, [[LoadingModules]]: a new empty List,</ins> [[HostDefined]]: _hostDefined_ }.
       </emu-alg>
     </emu-clause>
   </emu-clause>
@@ -394,6 +416,17 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
               </td>
               <td>
                 <ins>A map from the specifier strings used by the module represented by this record to request the importation of a module to the resolved Module Record. The list does not contain two different Records with the same [[Specifier]].</ins>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <ins>[[LoadingModules]]</ins>
+              </td>
+              <td>
+                <ins>a List of Records { [[Specifier]]: a String, [[LoadStates]]: a List of ModuleLoadState Records }</ins>
+              </td>
+              <td>
+                <ins>A map from the specifier strings imported by this script to the loading processes that are waiting for the resolved module record. It is used to avoid multiple calls to HostLoadImportedModule with the same (_specifier_, _referrer_) pair. The list does not contain two different Records with the same [[Specifier]].</ins>
               </td>
             </tr>
             <tr>
@@ -841,7 +874,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
               1. Else,
                 1. Append _ee_ to _indirectExportEntries_.
             1. Let _async_ be _body_ Contains `await`.
-            1. Return Source Text Module Record { [[Realm]]: _realm_, [[Environment]]: ~empty~, [[Namespace]]: ~empty~, [[CycleRoot]]: ~empty~, [[HasTLA]]: _async_, [[AsyncEvaluation]]: *false*, [[TopLevelCapability]]: ~empty~, [[AsyncParentModules]]: &laquo; &raquo;, [[PendingAsyncDependencies]]: ~empty~, [[Status]]: <del>~unlinked~</del><ins>~new~</ins>, [[EvaluationError]]: ~empty~, [[HostDefined]]: _hostDefined_, [[ECMAScriptCode]]: _body_, [[Context]]: ~empty~, [[ImportMeta]]: ~empty~, [[RequestedModules]]: _requestedModules_, <ins>[[LoadedModules]]: a new empty List,</ins> [[ImportEntries]]: _importEntries_, [[LocalExportEntries]]: _localExportEntries_, [[IndirectExportEntries]]: _indirectExportEntries_, [[StarExportEntries]]: _starExportEntries_, [[DFSIndex]]: ~empty~, [[DFSAncestorIndex]]: ~empty~ }.
+            1. Return Source Text Module Record { [[Realm]]: _realm_, [[Environment]]: ~empty~, [[Namespace]]: ~empty~, [[CycleRoot]]: ~empty~, [[HasTLA]]: _async_, [[AsyncEvaluation]]: *false*, [[TopLevelCapability]]: ~empty~, [[AsyncParentModules]]: &laquo; &raquo;, [[PendingAsyncDependencies]]: ~empty~, [[Status]]: <del>~unlinked~</del><ins>~new~</ins>, [[EvaluationError]]: ~empty~, [[HostDefined]]: _hostDefined_, [[ECMAScriptCode]]: _body_, [[Context]]: ~empty~, [[ImportMeta]]: ~empty~, [[RequestedModules]]: _requestedModules_, <ins>[[LoadedModules]]: a new empty List, [[LoadingModules]]: a new empty List,</ins> [[ImportEntries]]: _importEntries_, [[LocalExportEntries]]: _localExportEntries_, [[IndirectExportEntries]]: _indirectExportEntries_, [[StarExportEntries]]: _starExportEntries_, [[DFSIndex]]: ~empty~, [[DFSAncestorIndex]]: ~empty~ }.
           </emu-alg>
           <emu-note>
             <p>An implementation may parse module source text and analyse it for Early Error conditions prior to the evaluation of ParseModule for that module source text. However, the reporting of any errors must be deferred until the point where this specification actually performs ParseModule upon that source text.</p>
@@ -1182,8 +1215,11 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
         <emu-alg>
           1. If _referrer_.[[LoadedModules]] contains a Record _record_ such that _record_.[[Specifier]] is _specifier_, then
             1. Perform DispatchLoadImportedModuleContinuation(_state_, NormalCompletion(_result_.[[Module]])).
+          1. Else if _referrer_.[[LoadingModules]] contains a Record _record_ such that _record_.[[Specifier]] is _specifier_, then
+            1. Add _state_ to _record_.[[LoadStates]].
           1. Else,
-            1. Perform HostLoadImportedModule(_referrer_, _specifier_, _state_.[[HostDefined]], _state_).
+            1. Add Record { [[Specifier]]: _specifier_, [[LoadStates]]: &laquo; _state_ &raquo; } to _referrer_.[[LoadingModules]].
+            1. Perform HostLoadImportedModule(_referrer_, _specifier_, _state_.[[HostDefined]]).
         </emu-alg>
 
         <emu-clause id="sec-HostLoadImportedModule" type="host-defined abstract operation">
@@ -1192,8 +1228,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
               HostLoadImportedModule (
                 _referrer_: a Script Record, a Cyclic Module Record, or a Realm Record,
                 _specifier_: a String,
-                _hostDefined_: unknown,
-                _payload_: a ModuleLoadState Record,
+                _hostDefined_: anything,
               ): ~unused~
             </ins>
           </h1>
@@ -1213,13 +1248,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           <p>An implementation of HostLoadImportedModule must conform to the following requirements:</p>
           <ul>
             <li>
-              The host environment must perform FinishLoadImportedModule(_referrer_, _specifier_, _payload_, _result_), where _result_ is either a normal completion containing the loaded Module Record or a throw completion, either synchronously or asynchronously.
-            </li>
-            <li>
-              If this operation is called multiple times with the same (_referrer_, _specifier_) pair and it performs FinishLoadImportedModule(_referrer_, _specifier_, _payload_, _result_) where _result_ is a normal completion, then it must perform FinishLoadImportedModule(_referrer_, _specifier_, _payload_, _result_) with the same _result_ each time.
-            </li>
-            <li>
-              The operation must treat _payload_ as an opaque value to be passed through to FinishLoadImportedModule.
+              The host environment must perform FinishLoadImportedModule(_referrer_, _specifier_, _result_), where _result_ is either a normal completion containing the loaded Module Record or a throw completion, either synchronously or asynchronously.
             </li>
           </ul>
 
@@ -1232,7 +1261,6 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
               FinishLoadImportedModule (
                 _referrer_: a Script Record, a Cyclic Module Record, or a Realm Record,
                 _specifier_: a String,
-                _payload_: a ModuleLoadState Record,
                 _result_: either a normal completion containing a Module Record or a throw completion,
               ): ~unused~
             </ins>
@@ -1243,11 +1271,13 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           </dl>
           <emu-alg>
             1. If _result_ is a normal completion, then
-              1. If _referrer_.[[LoadedModules]] contains a Record _record_ such that _record_.[[Specifier]] is _specifier_, then
-                1. NOTE: This can happen when triggering two parallel imports of the same _specifier_ from the same _referrer_.
-                1. Assert: _record_.[[Module]] is _result_.[[Value]].
-              1. Else, add Record { [[Specifier]]: _specifier_, [[Module]]: _result_.[[Value]] } to _referrer_.[[LoadedModules]].
-            1. Perform DispatchLoadImportedModuleContinuation(_payload_, _result_).
+              1. Assert: _referrer_.[[LoadedModules]] does not contain a Record _record_ such that _record_.[[Specifier]] is _specifier_.
+              1. Add Record { [[Specifier]]: _specifier_, [[Module]]: _result_.[[Value]] } to _referrer_.[[LoadedModules]].
+            1. Assert: _referrer_.[[LoadingModules]] contains a Record whose [[Specifier]] field is _specifier_.
+            1. Let _entry_ be the Record in _referrer_.[[LoadingModules]] whose [[Specifier]] field is _specifier_.
+            1. Remove _entry_ from _referrer_.[[LoadingModules]].
+            1. For each ModuleLoadState Record _state_ in _entry_.[[LoadStates]], do
+              1. Perform DispatchLoadImportedModuleContinuation(_state_, _result_).
           </emu-alg>
         </emu-clause>
 

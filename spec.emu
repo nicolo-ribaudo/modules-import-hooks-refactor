@@ -158,7 +158,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           1. <ins>If _module_ is not ~empty~, then</ins>
             1. <ins>Perform ContinueDynamicImport(_state_, NormalCompletion(_module_)).</ins>
           1. <ins>Else,</ins>
-            1. <ins>Perform HostLoadImportedModule(_referrer_, _specifierString_, _state_).</ins>
+            1. <ins>Perform HostLoadImportedModule(_referrer_, _specifierString_, _state_.[[HostDefined]], _state_).</ins>
             1. <ins>NOTE: HostLoadImportedModule will call ContinueDynamicImport.</ins>
           1. Return _promiseCapability_.[[Promise]].
         </emu-alg>
@@ -450,14 +450,6 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             </tr>
             <tr>
               <td>
-                <ins>LoadRequestedModules()</ins>
-              </td>
-              <td>
-                <ins>Loads all the imported modules, and returns a promise resolved with *undefined* or rejected with the loading error.</ins>
-              </td>
-            </tr>
-            <tr>
-              <td>
                 InitializeEnvironment()
               </td>
               <td></td>
@@ -545,7 +537,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
                 <ins>[[HostDefined]]</ins>
               </td>
               <td>
-                <ins>~unknown~</ins>
+                <ins>anything</ins>
               </td>
               <td>
                 <ins>This field is only used if [[Action]] is ~dynamic-import~. It contains host-defined data to pass from the LoadRequestedModules caller to HostLoadImportedModule.</ins>

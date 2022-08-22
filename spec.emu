@@ -244,17 +244,17 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             </td>
             <td></td>
           </tr>
-            <tr>
-              <td>
-                <ins>[[LoadedModules]]</ins>
-              </td>
-              <td>
-                <ins>a List of Records { [[Specifier]]: a String, [[Module]]: a Module Record }</ins>
-              </td>
-              <td>
-                <ins>A map from the specifier strings imported by this script to the resolved Module Record. The list does not contain two different Records with the same [[Specifier]].</ins>
-              </td>
-            </tr>
+          <tr>
+            <td>
+              <ins>[[LoadedModules]]</ins>
+            </td>
+            <td>
+              <ins>a List of Records { [[Specifier]]: a String, [[Module]]: a Module Record }</ins>
+            </td>
+            <td>
+              <ins>A map from the specifier strings imported by this script to the resolved Module Record. The list does not contain two different Records with the same [[Specifier]].</ins>
+            </td>
+          </tr>
           <tr>
             <td>
               [[HostDefined]]

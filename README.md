@@ -17,6 +17,7 @@ ECMA-262 currently exposes two hooks related to modules loading: [`HostResolveIm
 When we introduced dynamic imports in ES2020, this abstraction leaked: the asynchronous loading part needed to run _during_ the execution of other ECMAScript code, so we had to introduce the new host hook [`HostImportModuleDynamically(referencingScriptOrModule, specifier, promiseCapability)`](https://tc39.es/ecma262/#sec-hostimportmoduledynamically) to give hosts the opportunity to asynchronously prepare for the synchronous `HostResolveImportedModule` calls.
 
 When loading and evaluating modules, either using host-defined mehanisms such as `<script>` tags or when using `HostImportModuleDynamically` via dynamic import, the complete algorithm is divided between the host and ECMA-262:
+
 1. **(host, potentially async)** Load the module graph:
    1. **(host, potentially async)** Load the Module Record.
    2. **(host)** Get all its static dependency specifiers.
@@ -31,6 +32,7 @@ When loading and evaluating modules, either using host-defined mehanisms such as
 3. **(host, potentially async)** Call `.Evaluate()` on the top-level Module Record.
 
 This refactor proposal aims to revisit the layering decision made by the dynamic import proposal: rather than introducing a new hook to permit async host steps for `import()` calls, it replaces `HostResolveImportedModule` with an equivalent but async-compatible `HostLoadImportedModule` hook: it loads a single module, and ECMA-262 iterates through its dependencies asking to the host to load them. The updated algorithm is:
+
 1. **(host or ECMA-262, potentially async)** Load the module graph:
    1. **(ECMA-262, potentially async)** Call `HostLoadImportedModule(specifier, referencingModule)`.
    1. **(ECMA-262)** Get all its static dependency specifiers.
@@ -49,10 +51,12 @@ where **host or ECMA-262** means "host if the algorithm is run by an host-define
 This refactor has two benefits on its own: it reduces the amount of behavior delegated to the host, by taking ownership of the loading steps shared across all the hosts that use asynchronous loading.
 
 However, it's most useful for some current proposals that introduce the concept of a "module whose dependencies have not been loaded yet":
+
 - [Module Blocks](https://github.com/tc39/proposal-js-module-blocks) and [Compartments](https://github.com/tc39/proposal-compartments) need a new host hook to "load the dependencies of an already loaded module" ([`HostImportModuleRecordDynamically`](https://tc39.es/proposal-compartments/0-module-and-module-source.html#sec-hostimportmodulerecorddynamically));
 - [Import Reflection](https://github.com/tc39/proposal-import-reflection) needs a new host hook to "load a module without loading its dependencies" ([`HostResolveModuleReflection`](https://tc39.es/proposal-import-reflection/#sec-hostresolvemodulereflection)).
 
 `HostLoadImpotedModule` is low-level enough that it already satisfies those use cases:
+
 - Module Blocks and Compartments can recursively call `HostLoadImportedModule` on the dependencies of the unlinked module;
 - Import Reflection can use `HostLoadImportedModule` to load a single module without recursively loading its dependencies.
 
@@ -61,12 +65,14 @@ This refactor reduces the number of loading-related host hooks from 2 to 1, and 
 ## Constraints
 
 This refactor should not force module loading to be asynchronous:
+
 - For hosts that currently load modules synchronously, forcing a promise tick for each recursive dependency might cause a big performance regression.
 - Some hosts (for example, [Bun](https://github.com/oven-sh/bun/blob/47a91e745781bd97b1747e2b11234244cd46b29d/src/bun.js/builtins/js/ImportMetaObject.js#L67)) allow synchronously importing modules that don't use top-level await, by relying on the fact that `module.Evaluate()` returns a resolved promise and synchronously inspecting is value.
 
 With this refactor both are still possible: `HostLoadImportedModule` can synchronously give control back to ECMA-262 (reusing the same logic they had in `HostResolveImportedModule`) to synchronously continue the loading process. The new `module.LoadRequestedModules()` will then return a resolved promise.
 
 Hosts can still implement synchronous import of modules:
+
 1. Load the module.
 1. Call `module.LoadRequestedModules()`, which returns a `loadPromise`.
 1. If `loadPromise.[[Status]]` is `rejected`, throw; otherwise it's `fulfilled`.
@@ -83,6 +89,7 @@ Hosts can use these new ECMA-262 algorithms in two ways.
 This is the most straigthforward integration is to keeps the loading algorithms used for `HostResolveImportedModule`/`HostImportModuleDynamically`.
 
 Assuming that the old hooks are implemented as follows:
+
 - _HostResolveImportedModule_(`referencingScriptOrModule`, `specifier`):
   1. Let `fullSpecifier` be the result of resolving `specifier` from `referencingScriptOrModule` (for example, via URLs).
   2. Return the already loaded Module Record corresponding to `fullSpecifier`.
@@ -95,14 +102,15 @@ Assuming that the old hooks are implemented as follows:
   6. Call _FinishDynamicImport_(`referencingScriptOrModule`, `specifier`, `promiseCapability`, `evaluationPromise`).
 
 The new host hook would be implemented as follows:
+
 - _HostLoadImportedModule_(`referrer`, `specifier`):
   1. Let `fullSpecifier` be the result of resolving `specifier` from `referencingScriptOrModule` (for example, via URLs).
   2. If a Module Record corresponding to `fullSpecifier` has already been loaded, then:
      1. Let `module` be such Module Record.
      2. Return `module`.
-  2. (async) Let `module` be the result of loading and parsing the source code corresponding to `fullSpecifier`.
-  3. (async) Recursively load and parse the dependencies of `module`.
-  4. Call _FinishLoadImportedModule_(`referrer`, `specifier`, `module`).
+  3. (async) Let `module` be the result of loading and parsing the source code corresponding to `fullSpecifier`.
+  4. (async) Recursively load and parse the dependencies of `module`.
+  5. Call _FinishLoadImportedModule_(`referrer`, `specifier`, `module`).
 
 A more advanced refactor would avoid step 3. of the above _HostLoadImportedModule_ implementation, and fully delegate the dependencies discovery algorithm to ECMA-262. Hosts should carefully consider the differences between the ECMA-262 algorithm and their own before doing so.
 
@@ -110,17 +118,17 @@ A more advanced refactor would avoid step 3. of the above _HostLoadImportedModul
 
 This proposal changes the number of spec-defined promise ticks when successfully importing a module with `import("foo")`.
 
-| Has `"foo"` already been imported? | Is `"foo"` a Cyclic Module Record? | Old number of ticks         | New number of ticks         |
-| :--------------------------------- | :--------------------------------- | :-------------------------- | :-------------------------- |
-| Yes, from the same module          | Yes                                | (host-defined) + 2          | 2                           |
-| Yes, from a somewhere else         | Yes                                | (host-defined) + 2          | (host-defined) + 2          |
-| No                                 | Yes                                | (host-defined) + 2 + (Eval) | (host-defined) + 2 + (Eval) |
-| Yes, from the same module          | No                                 | (host-defined) + 2          | 1 + (Eval)                  |
-| Yes, from a somewhere else         | No                                 | (host-defined) + 2          | (host-defined) + 1 + (Eval) |
-| No                                 | No                                 | (host-defined) + 2 + (Eval) | (host-defined) + 1 + (Eval) |
+| Has `"foo"` already been imported? | Is `"foo"` a Cyclic Module Record? | Old number of ticks | New number of ticks         |
+| :--------------------------------- | :--------------------------------- | :------------------ | :-------------------------- |
+| Yes, from the same module          | Yes                                | (host-defined) + 1  | 2                           |
+| Yes, from a somewhere else         | Yes                                | (host-defined) + 1  | (host-defined) + 2          |
+| No                                 | Yes                                | (host-defined) + 1  | (host-defined) + 1 + (Eval) |
+| Yes, from the same module          | No                                 | (host-defined) + 1  | 1 + (Eval)                  |
+| Yes, from a somewhere else         | No                                 | (host-defined) + 1  | (host-defined) + 1 + (Eval) |
+| No                                 | No                                 | (host-defined) + 1  | (host-defined) + 1 + (Eval) |
 
-- (host-defined) represents the number of ticks that the host needs to load the module and its dependencies. With the old behavior it's the time needed by the host to call `FinishDynamicImport` and to resolve its `promise` argument; with the new behavior it's the time taken by all the `HostLoadImportedModule` executions to call `FinishLoadImportedModule`. It's always at least 1, because in both cases it results in a promise that needs to be awaited.
-- (Eval) represents the number of promise ticks used by the `.Evaluate()` method of module records, which returns a promise. With the old behavior hosts could inspect the promise and synchronously continue if it was already resolved, so it could be 0 ticks; with the new behavior it always takes at least 1 tick because the resulting promise is always awaited.
+- (host-defined) represents the number of ticks that the host needs to load the module and its dependencies. With the old behavior it's the time needed by the host to call `FinishDynamicImport` and to resolve its `promise` argument; with the new behavior it's the time taken by all the `HostLoadImportedModule` executions to call `FinishLoadImportedModule`.
+- (Eval) represents the number of promise ticks used by the `.Evaluate()` method of module records, which returns a promise and thus takes at least 1 tick to be awaited.
 
 ## Open questions
 

@@ -174,17 +174,36 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           </dl>
           <emu-alg>
             1. Let _promiseCapability_ be _state_.[[PromiseCapability]].
-            1. IfAbruptRejectPromise(_module_, _promiseCapability_).
-            1. If _module_ is a Cyclic Module Record and _module_.[[Status]] is ~new~, then
-              1. Let _load_ be Completion(Await(_module_.LoadRequestedModules())).
-              1. IfAbruptRejectPromise(_load_, _promiseCapability_).
-            1. Let _link_ be Completion(_module_.Link()).
-            1. IfAbruptRejectPromise(_link_, _promiseCapability_).
-            1. Let _evaluate_ be Completion(Await(_module_.Evaluate())).
-            1. IfAbruptRejectPromise(_evaluate_, _promiseCapability_).
-            1. Let _namespace_ be Completion(GetModuleNamespace(_module_)).
-            1. IfAbruptRejectPromise(_namespace_, _promiseCapability_).
-            1. Perform ! Call(_promiseCapability_.[[Resolve]], *undefined*, &laquo; _namespace_ &raquo;).
+            1. If _module_ is an abrupt completion, then
+              1. Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, &laquo; _module_.[[Value]] &raquo;).
+              1. Return ~unused~.
+            1. Else,
+              1. Set _module_ to _module_.[[Value]].
+            1. Let _rejectedClosure_ be a new Abstract Closure with parameters (_reason_) that captures _promiseCapability_ and performs the following steps when called:
+              1. Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, &laquo; _reason_ &raquo;).
+              1. Return ~unused~.
+            1. Let _onRejected_ be CreateBuiltinFunction(_rejectedClosure_, 1, &laquo; &raquo;).
+            1. Let _linkAndEvaluateClosure_ be a new Abstract Closure with no parameters that captures _module_, _promiseCapability_, and _onRejected_ and performs the following steps when called:
+              1. Let _link_ be Completion(_module_.Link()).
+              1. If _link_ is an abrupt completion, then
+                1. Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, &laquo; _link_.[[Value]] &raquo;).
+                1. Return ~unused~.
+              1. Let _evaluatePromise_ be _module_.Evaluate().
+              1. Let _fulfilledClosure_ be a new Abstract Closure with no parameters that captures _module_ and _promiseCapability_ and performs the following steps when called:
+                1. Let _namespace_ be Completion(GetModuleNamespace(_module_)).
+                1. If _namespace_ is an abrupt completion, then
+                  1. Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, &laquo; _namespace_.[[Value]] &raquo;).
+                1. Else,
+                  1. Perform ! Call(_promiseCapability_.[[Resolve]], *undefined*, &laquo; _namespace_.[[Value]] &raquo;).
+                1. Return ~unused~.
+              1. Let _onFulfilled_ be CreateBuiltinFunction(_fulfilledClosure_, 0, &laquo; &raquo;).
+              1. Perform PerformPromiseThen(_evaluatePromise_, _onFulfilled_, _onRejected_).
+            1. Let _linkAndEvaluate_ be CreateBuiltinFunction(_linkAndEvaluateClosure_, 0, &laquo; &raquo;).
+            1. If _module_ is a Cyclic Module Record, then
+              1. Let _loadPromise_ be _module_.LoadRequestedModules().
+              1. Perform PerformPromiseThen(_loadPromise_, _linkAndEvaluate_, _onRejected_).
+            1. Else,
+              1. Perform _linkAndEvaluateClosure_().
             1. Return ~unused~.
           </emu-alg>
         </emu-clause>

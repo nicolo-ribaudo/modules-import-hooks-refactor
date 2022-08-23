@@ -118,19 +118,23 @@ A more advanced refactor would avoid step 3. of the above _HostLoadImportedModul
 
 This proposal changes the number of spec-defined promise ticks when successfully importing a module with `import("foo")`.
 
-| Has `"foo"` already been imported? | Is `"foo"` a Cyclic Module Record? | Old number of ticks | New number of ticks         |
-| :--------------------------------- | :--------------------------------- | :------------------ | :-------------------------- |
-| Yes, from the same module          | Yes                                | (host-defined) + 1  | 2                           |
-| Yes, from a somewhere else         | Yes                                | (host-defined) + 1  | (host-defined) + 2          |
-| No                                 | Yes                                | (host-defined) + 1  | (host-defined) + 1 + (Eval) |
-| Yes, from the same module          | No                                 | (host-defined) + 1  | 1 + (Eval)                  |
-| Yes, from a somewhere else         | No                                 | (host-defined) + 1  | (host-defined) + 1 + (Eval) |
-| No                                 | No                                 | (host-defined) + 1  | (host-defined) + 1 + (Eval) |
+| Has `"foo"` already been imported? | Is `"foo"` a Cyclic Module Record? | Old number of ticks       | New number of ticks                       |
+| :--------------------------------- | :--------------------------------- | :------------------------ | :---------------------------------------- |
+| Yes, from the same module          | Yes                                | (host-defined &ge; 1) + 1 | 2                                         |
+| Yes, from a somewhere else         | Yes                                | (host-defined &ge; 1) + 1 | (host-defined &ge; 0) + 2                 |
+| No                                 | Yes                                | (host-defined &ge; 1) + 1 | (host-defined &ge; 0) + 2 + (Eval &ge; 0) |
+| Yes, from the same module          | No                                 | (host-defined &ge; 1) + 1 | 2 + (Eval &ge; 0)                         |
+| Yes, from a somewhere else         | No                                 | (host-defined &ge; 1) + 1 | (host-defined &ge; 0) + 2 + (Eval &ge; 0) |
+| No                                 | No                                 | (host-defined &ge; 1) + 1 | (host-defined &ge; 0) + 2 + (Eval &ge; 0) |
 
-- (host-defined) represents the number of ticks that the host needs to load the module and its dependencies. With the old behavior it's the time needed by the host to call `FinishDynamicImport` and to resolve its `promise` argument; with the new behavior it's the time taken by all the `HostLoadImportedModule` executions to call `FinishLoadImportedModule`.
-- (Eval) represents the number of promise ticks used by the `.Evaluate()` method of module records, which returns a promise and thus takes at least 1 tick to be awaited.
+- (host-defined) represents the number of ticks that the host needs to load the module and its dependencies. With the old behavior it's the time needed by the host to call `FinishDynamicImport` and to resolve its `promise` argument; with the new behavior it's the time taken by all the `HostLoadImportedModule` executions to call `FinishLoadImportedModule`. I assume that the "at some future time" mention in the `HostImportModuleDynamically` description implies that it takes at least 1 tick.
+- (Eval) represents the number of promise ticks used by the `.Evaluate()` method of module records.
 
 ## Open questions
+
+**Should _module.LoadRequestedModules()_ live on Abstract Module Record or Cyclic Module Record?**
+
+ECMA-262 only has the concept of dependencies for Cyclic Module Records, but this method makes sense also for other Module Records that have dependencies not exposed to ECMA-262.
 
 **Is it possibe to use a single method that does both _module.LoadRequestedModules()_ and _module.Link()_?**
 

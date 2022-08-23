@@ -201,9 +201,9 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             1. Let _linkAndEvaluate_ be CreateBuiltinFunction(_linkAndEvaluateClosure_, 0, &laquo; &raquo;).
             1. If _module_ is a Cyclic Module Record, then
               1. Let _loadPromise_ be _module_.LoadRequestedModules().
-              1. Perform PerformPromiseThen(_loadPromise_, _linkAndEvaluate_, _onRejected_).
             1. Else,
-              1. Perform _linkAndEvaluateClosure_().
+              1. Let _loadPromise_ be ! PromiseResolve(%Promise%, *undefined*).
+            1. Perform PerformPromiseThen(_loadPromise_, _linkAndEvaluate_, _onRejected_).
             1. Return ~unused~.
           </emu-alg>
         </emu-clause>

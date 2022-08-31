@@ -474,7 +474,7 @@ location: https://nicolo-ribaudo.github.io/modules-import-hooks-refactor/
           </table>
         </emu-table>
 
-        <p><ins>A <dfn id="moduleloadstate-record" variants="ModuleLoadState Records">ModuleLoadState Record</dfn> is a Record that contains information about the loading process of a module graph. It's used to continue loading after a call to LoadImportedModule. Each ModuleLoadState Record has the fields defined in <emu-xref href="#table-moduleloadstate-record-fields"></emu-xref>:</ins></p>
+        <p><ins>A <dfn id="moduleloadstate-record" variants="ModuleLoadState Records">ModuleLoadState Record</dfn> is a Record that contains information about the loading process of a module graph. It's used to continue loading after a call to HostLoadImportedModule. Each ModuleLoadState Record has the fields defined in <emu-xref href="#table-moduleloadstate-record-fields"></emu-xref>:</ins></p>
         <emu-table id="table-moduleloadstate-record-fields" caption="ModuleLoadState Record Fields">
           <table>
             <tr>
@@ -496,7 +496,7 @@ location: https://nicolo-ribaudo.github.io/modules-import-hooks-refactor/
                 <ins>~graph-loading~ or ~dynamic-import~</ins>
               </td>
               <td>
-                <ins>The action that caused the call to LoadImportedModule. It is ~graph-loading~ when loading the dependencies of a module; it is ~dynamic-import~ when loading a module that was requested by an `import()` call.</ins>
+                <ins>The action that caused the call to HostLoadImportedModule. It is ~graph-loading~ when loading the dependencies of a module; it is ~dynamic-import~ when loading a module that was requested by an `import()` call.</ins>
               </td>
             </tr>
             <tr>
@@ -605,8 +605,11 @@ location: https://nicolo-ribaudo.github.io/modules-import-hooks-refactor/
                 1. Let _requestedModulesCount_ be the length of _module_.[[RequestedModules]].
                 1. Set _state_.[[PendingModules]] to _state_.[[PendingModules]] + _requestedModulesCount_.
                 1. For each String _required_ of _module_.[[RequestedModules]], do
-                  1. Perform LoadImportedModule(_module_, _required_, _state_).
-                  1. NOTE: LoadImportedModule will call ContinueModuleLoading.
+                  1. If _module_.[[LoadedModules]] contains a Record _record_ such that _record_.[[Specifier]] is _required_, then
+                    1. Perform ContinueModuleLoading(_state_, NormalCompletion(_record_.[[Module]])).
+                  1. Else,
+                    1. Perform HostLoadImportedModule(_referrer_, _specifier_, _state_.[[HostDefined]], _state_).
+                    1. NOTE: HostLoadImportedModule will call ContinueModuleLoading.
               1. Assert: _state_.[[PendingModules]] &ge; 1.
               1. Set _state_.[[PendingModules]] to _state_.[[PendingModules]] - 1.
               1. If _state_.[[PendingModules]] = 0, then
@@ -628,7 +631,7 @@ location: https://nicolo-ribaudo.github.io/modules-import-hooks-refactor/
             </h1>
             <dl class="header">
               <dt>description</dt>
-              <dd>It is used to re-enter the loading process after a call to LoadImportedModule.</dd>
+              <dd>It is used to re-enter the loading process after a call to HostLoadImportedModule.</dd>
             </dl>
 
             <emu-alg>
@@ -1160,28 +1163,6 @@ location: https://nicolo-ribaudo.github.io/modules-import-hooks-refactor/
         </emu-alg>
       </emu-clause>
 
-      <emu-clause id="sec-LoadImportedModule" type="abstract operation">
-        <h1>
-          <ins>
-            LoadImportedModule (
-              _referrer_: a Script Record, a Cyclic Module Record, or a Realm Record,
-              _specifier_: a String,
-              _state_: a ModuleLoadState Record,
-            ): ~unused~
-          </ins>
-        </h1>
-        <dl class="header">
-          <dt>description</dt>
-          <dd></dd>
-        </dl>
-
-        <emu-alg>
-          1. If _referrer_.[[LoadedModules]] contains a Record _record_ such that _record_.[[Specifier]] is _specifier_, then
-            1. Perform DispatchLoadImportedModuleContinuation(_state_, NormalCompletion(_result_.[[Module]])).
-          1. Else,
-            1. Perform HostLoadImportedModule(_referrer_, _specifier_, _state_.[[HostDefined]], _state_).
-        </emu-alg>
-
         <emu-clause id="sec-HostLoadImportedModule" type="host-defined abstract operation">
           <h1>
             <ins>
@@ -1242,24 +1223,6 @@ location: https://nicolo-ribaudo.github.io/modules-import-hooks-refactor/
               1. If _referrer_.[[LoadedModules]] contains a Record _record_ such that _record_.[[Specifier]] is _specifier_, then
                 1. Assert: _record_.[[Module]] is _result_.[[Value]].
               1. Else, add Record { [[Specifier]]: _specifier_, [[Module]]: _result_.[[Value]] } to _referrer_.[[LoadedModules]].
-            1. Perform DispatchLoadImportedModuleContinuation(_payload_, _result_).
-          </emu-alg>
-        </emu-clause>
-
-        <emu-clause id="sec-DispatchLoadImportedModuleContinuation" type="abstract operation">
-          <h1>
-            <ins>
-              DispatchLoadImportedModuleContinuation (
-                _state_: a ModuleLoadState Record,
-                _result_: either a normal completion containing a Module Record or a throw completion,
-              ): ~unused~
-            </ins>
-          </h1>
-          <dl class="header">
-            <dt>description</dt>
-            <dd></dd>
-          </dl>
-          <emu-alg>
             1. If _state_.[[Action]] is ~graph-loading~, then
               1. Perform ContinueModuleLoading(_state_, _result_).
             1. Else,

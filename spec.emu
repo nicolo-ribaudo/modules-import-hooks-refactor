@@ -199,10 +199,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
               1. Let _onFulfilled_ be CreateBuiltinFunction(_fulfilledClosure_, 0, &laquo; &raquo;).
               1. Perform PerformPromiseThen(_evaluatePromise_, _onFulfilled_, _onRejected_).
             1. Let _linkAndEvaluate_ be CreateBuiltinFunction(_linkAndEvaluateClosure_, 0, &laquo; &raquo;).
-            1. If _module_ is a Cyclic Module Record, then
-              1. Let _loadPromise_ be _module_.LoadRequestedModules().
-            1. Else,
-              1. Let _loadPromise_ be ! PromiseResolve(%Promise%, *undefined*).
+            1. Let _loadPromise_ be _module_.LoadRequestedModules().
             1. Perform PerformPromiseThen(_loadPromise_, _linkAndEvaluate_, _onRejected_).
             1. Return ~unused~.
           </emu-alg>
@@ -317,7 +314,63 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
       <emu-clause id="sec-placeholder-16.2.1.1"><h1></h1></emu-clause>
       <emu-clause id="sec-placeholder-16.2.1.2"><h1></h1></emu-clause>
       <emu-clause id="sec-placeholder-16.2.1.3"><h1></h1></emu-clause>
-      <emu-clause id="sec-placeholder-16.2.1.4"><h1></h1></emu-clause>
+
+      <emu-clause id="sec-abstract-module-records">
+        <h1>Abstract Module Records</h1>
+        <p>A <dfn variants="Module Records">Module Record</dfn> encapsulates structural information about the imports and exports of a single module. This information is used to link the imports and exports of sets of connected modules. A Module Record includes four fields that are only used when evaluating a module.</p>
+        <p>For specification purposes Module Record values are values of the Record specification type and can be thought of as existing in a simple object-oriented hierarchy where Module Record is an abstract class with both abstract and concrete subclasses. This specification defines the abstract subclass named Cyclic Module Record and its concrete subclass named Source Text Module Record. Other specifications and implementations may define additional Module Record subclasses corresponding to alternative module definition facilities that they defined.</p>
+        <p>Module Record defines the fields listed in <emu-xref href="#table-module-record-fields"></emu-xref>. All Module Definition subclasses include at least those fields. Module Record also defines the abstract method list in <emu-xref href="#table-abstract-methods-of-module-records"></emu-xref>. All Module definition subclasses must provide concrete implementations of these abstract methods.</p>
+        <emu-table id="table-abstract-methods-of-module-records" caption="Abstract Methods of Module Records" oldids="table-37">
+          <table>
+            <tr>
+              <th>
+                Method
+              </th>
+              <th>
+                Purpose
+              </th>
+            </tr>
+            <tr>
+              <td>
+                GetExportedNames([_exportStarSet_])
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>
+                ResolveExport(_exportName_ [, _resolveSet_])
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>
+                <ins>LoadRequestedModules()</ins>
+              </td>
+              <td>
+                <p><ins>Prepares the module for linking by recursively loading all its dependencies, and returns a promise.</ins></p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Link()
+              </td>
+              <td>
+                <p>Prepare the module for evaluation by transitively resolving all module dependencies and creating a module Environment Record.</p>
+                <p><ins>LoadRequestedModules must have completed successfully prior to invoking this method.</ins></p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Evaluate()
+              </td>
+              <td>
+                <p>Returns a promise for the evaluation of this module and its dependencies, resolving on successful evaluation or if it has already been evaluated successfully, and rejecting for an evaluation error or if it has already been evaluated unsuccessfully. If the promise is rejected, hosts are expected to handle the promise rejection and rethrow the evaluation error.</p>
+                <p>Link must have completed successfully prior to invoking this method.</p>
+              </td>
+            </tr>
+          </table>
+        </emu-table>
+      </emu-clause>
 
       <emu-clause id="sec-cyclic-module-records">
         <h1>Cyclic Module Records</h1>

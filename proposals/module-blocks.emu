@@ -143,7 +143,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             1. If _referencingScriptOrModule_ is not *null* and there exists a Record _record_ in _referencingScriptOrModule_.[[LoadedModules]] such that _record_.[[Specifier]] is _specifierString_, then
               1. Perform ContinueDynamicImport(_state_, _record_.[[Module]]).
             1. Else,
-              1. Perform HostLoadImportedModule(_referencingScriptOrModule_, _specifierString_, _state_).
+              1. Perform HostLoadImportedModule(_referencingScriptOrModule_, _specifierString_, _state_.[[HostDefined]], _state_).
           1. Return _promiseCapability_.[[Promise]].
         </emu-alg>
       </emu-clause>

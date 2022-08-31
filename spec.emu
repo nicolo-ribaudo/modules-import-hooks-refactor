@@ -10,39 +10,10 @@ contributors: Nicolò Ribaudo
 location: https://nicolo-ribaudo.github.io/modules-import-hooks-refactor/
 </pre>
 
-<!--
-Idea adapted from @ljharb, but avoiding multiple equal ids.
-https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83461d3631bf810fa3487/spec.emu#L13-L24
--->
-<style>
-[id^="sec-placeholder"], [href^="#sec-placeholder"] {
-  display: none;
-}
-</style>
-<script>
-  Array.from(document.querySelectorAll('ol.toc li'), function (node) {
-    if (node.querySelector(':scope > [href^="#sec-placeholder"]')) {
-      node.style.display = 'none';
-    }
-  });
-</script>
-
-<emu-clause id="sec-placeholder-1"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-2"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-3"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-4"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-5"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-6"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-7"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-8"><h1></h1></emu-clause>
-
-<emu-clause id="sec-executable-code-and-execution-contexts">
+<emu-clause number="9" id="sec-executable-code-and-execution-contexts">
   <h1>Executable Code and Execution Contexts</h1>
 
-  <emu-clause id="sec-placeholder-9.1"><h1></h1></emu-clause>
-  <emu-clause id="sec-placeholder-9.2"><h1></h1></emu-clause>
-
-  <emu-clause id="sec-code-realms">
+  <emu-clause number="3" id="sec-code-realms">
     <h1>Realms</h1>
     <p>Before it is evaluated, all ECMAScript code must be associated with a <dfn id="realm" variants="realms">realm</dfn>. Conceptually, a realm consists of a set of intrinsic objects, an ECMAScript global environment, all of the ECMAScript code that is loaded within the scope of that global environment, and other associated state and resources.</p>
     <p>A realm is represented in this specification as a <dfn id="realm-record" variants="Realm Records">Realm Record</dfn> with the fields specified in <emu-xref href="#table-realm-record-fields"></emu-xref>:</p>
@@ -114,30 +85,13 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
   </emu-clause>
 </emu-clause>
 
-<emu-clause id="sec-placeholder-10"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-11"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-12"><h1></h1></emu-clause>
-
-<emu-clause id="sec-ecmascript-language-expressions">
+<emu-clause number="13" id="sec-ecmascript-language-expressions">
   <h1>ECMAScript Language: Expressions</h1>
 
-  <emu-clause id="sec-placeholder-13.1"><h1></h1></emu-clause>
-  <emu-clause id="sec-placeholder-13.2"><h1></h1></emu-clause>
-
-  <emu-clause id="sec-left-hand-side-expressions">
+  <emu-clause number="3" id="sec-left-hand-side-expressions">
     <h1>Left-Hand-Side Expressions</h1>
 
-    <emu-clause id="sec-placeholder-13.3.1"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-13.3.2"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-13.3.3"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-13.3.4"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-13.3.5"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-13.3.6"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-13.3.7"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-13.3.8"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-13.3.9"><h1></h1></emu-clause>
-
-    <emu-clause id="sec-import-calls">
+    <emu-clause number="10" id="sec-import-calls">
       <h1>Import Calls</h1>
 
       <emu-clause id="sec-import-call-runtime-semantics-evaluation" type="sdo">
@@ -154,7 +108,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
           1. IfAbruptRejectPromise(_specifierString_, _promiseCapability_).
           1. <del>Perform HostImportModuleDynamically(_referencingScriptOrModule_, _specifierString_, _promiseCapability_).</del>
           1. <ins>Let _state_ be a new ModuleLoadState Record { [[Action]]: ~dynamic-import~, [[PromiseCapability]]: _promiseCapability_ }.</ins>
-          1. <ins>Perform LoadImportedModule(_referrer_, _specifierString_, _state_.[[HostDefined]], _state_).</ins>
+          1. <ins>Perform LoadImportedModule(_referrer_, _specifierString_, _state_).</ins>
           1. <ins>NOTE: LoadImportedModule will call ContinueDynamicImport.</ins>
           1. Return _promiseCapability_.[[Promise]].
         </emu-alg>
@@ -182,7 +136,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
             1. Let _rejectedClosure_ be a new Abstract Closure with parameters (_reason_) that captures _promiseCapability_ and performs the following steps when called:
               1. Perform ! Call(_promiseCapability_.[[Reject]], *undefined*, &laquo; _reason_ &raquo;).
               1. Return ~unused~.
-            1. Let _onRejected_ be CreateBuiltinFunction(_rejectedClosure_, 1, &laquo; &raquo;).
+            1. Let _onRejected_ be CreateBuiltinFunction(_rejectedClosure_, 1, *""*, &laquo; &raquo;).
             1. Let _linkAndEvaluateClosure_ be a new Abstract Closure with no parameters that captures _module_, _promiseCapability_, and _onRejected_ and performs the following steps when called:
               1. Let _link_ be Completion(_module_.Link()).
               1. If _link_ is an abrupt completion, then
@@ -196,9 +150,9 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
                 1. Else,
                   1. Perform ! Call(_promiseCapability_.[[Resolve]], *undefined*, &laquo; _namespace_.[[Value]] &raquo;).
                 1. Return ~unused~.
-              1. Let _onFulfilled_ be CreateBuiltinFunction(_fulfilledClosure_, 0, &laquo; &raquo;).
+              1. Let _onFulfilled_ be CreateBuiltinFunction(_fulfilledClosure_, *""*, 0, &laquo; &raquo;).
               1. Perform PerformPromiseThen(_evaluatePromise_, _onFulfilled_, _onRejected_).
-            1. Let _linkAndEvaluate_ be CreateBuiltinFunction(_linkAndEvaluateClosure_, 0, &laquo; &raquo;).
+            1. Let _linkAndEvaluate_ be CreateBuiltinFunction(_linkAndEvaluateClosure_, *""*, 0, &laquo; &raquo;).
             1. Let _loadPromise_ be _module_.LoadRequestedModules().
             1. Perform PerformPromiseThen(_loadPromise_, _linkAndEvaluate_, _onRejected_).
             1. Return ~unused~.
@@ -209,20 +163,13 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
   </emu-clause>
 </emu-clause>
 
-<emu-clause id="sec-placeholder-14"><h1></h1></emu-clause>
-<emu-clause id="sec-placeholder-15"><h1></h1></emu-clause>
-
-<emu-clause id="sec-ecmascript-language-scripts-and-modules">
+<emu-clause number="16" id="sec-ecmascript-language-scripts-and-modules">
   <h1>ECMAScript Language: Scripts and Modules</h1>
 
   <emu-clause id="sec-scripts">
     <h1>Scripts</h1>
 
-    <emu-clause id="sec-placeholder-16.1.1"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-16.1.2"><h1></h1></emu-clause>
-    <emu-clause id="sec-placeholder-16.1.3"><h1></h1></emu-clause>
-
-    <emu-clause id="sec-script-records">
+    <emu-clause number="4" id="sec-script-records">
       <h1>Script Records</h1>
 
       <p>A <dfn id="script-record" variants="Script Records">Script Record</dfn> encapsulates information about a script being evaluated. Each script record contains the fields listed in <emu-xref href="#table-script-records"></emu-xref>.</p>
@@ -300,7 +247,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
       <emu-alg>
         1. Let _script_ be ParseText(_sourceText_, |Script|).
         1. If _script_ is a List of errors, return _script_.
-        1. Return Script Record { [[Realm]]: _realm_, [[ECMAScriptCode]]: _script_, <ins>[[LoadedModules]]: a new empty List,</ins> [[HostDefined]]: _hostDefined_ }.
+        1. Return Script Record { [[Realm]]: _realm_, [[ECMAScriptCode]]: _script_, [[LoadedModules]]: <ins>a new empty List</ins>, [[HostDefined]]: _hostDefined_ }.
       </emu-alg>
     </emu-clause>
   </emu-clause>
@@ -311,11 +258,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
     <emu-clause id="sec-module-semantics">
       <h1>Module Semantics</h1>
 
-      <emu-clause id="sec-placeholder-16.2.1.1"><h1></h1></emu-clause>
-      <emu-clause id="sec-placeholder-16.2.1.2"><h1></h1></emu-clause>
-      <emu-clause id="sec-placeholder-16.2.1.3"><h1></h1></emu-clause>
-
-      <emu-clause id="sec-abstract-module-records">
+      <emu-clause number="4" id="sec-abstract-module-records">
         <h1>Abstract Module Records</h1>
         <p>A <dfn variants="Module Records">Module Record</dfn> encapsulates structural information about the imports and exports of a single module. This information is used to link the imports and exports of sets of connected modules. A Module Record includes four fields that are only used when evaluating a module.</p>
         <p>For specification purposes Module Record values are values of the Record specification type and can be thought of as existing in a simple object-oriented hierarchy where Module Record is an abstract class with both abstract and concrete subclasses. This specification defines the abstract subclass named Cyclic Module Record and its concrete subclass named Source Text Module Record. Other specifications and implementations may define additional Module Record subclasses corresponding to alternative module definition facilities that they defined.</p>
@@ -894,7 +837,7 @@ https://github.com/rricard/proposal-symbol-predicates/blob/7c8c661604d89c3af7a83
               1. Else,
                 1. Append _ee_ to _indirectExportEntries_.
             1. Let _async_ be _body_ Contains `await`.
-            1. Return Source Text Module Record { [[Realm]]: _realm_, [[Environment]]: ~empty~, [[Namespace]]: ~empty~, [[CycleRoot]]: ~empty~, [[HasTLA]]: _async_, [[AsyncEvaluation]]: *false*, [[TopLevelCapability]]: ~empty~, [[AsyncParentModules]]: &laquo; &raquo;, [[PendingAsyncDependencies]]: ~empty~, [[Status]]: <del>~unlinked~</del><ins>~new~</ins>, [[EvaluationError]]: ~empty~, [[HostDefined]]: _hostDefined_, [[ECMAScriptCode]]: _body_, [[Context]]: ~empty~, [[ImportMeta]]: ~empty~, [[RequestedModules]]: _requestedModules_, <ins>[[LoadedModules]]: a new empty List,</ins> [[ImportEntries]]: _importEntries_, [[LocalExportEntries]]: _localExportEntries_, [[IndirectExportEntries]]: _indirectExportEntries_, [[StarExportEntries]]: _starExportEntries_, [[DFSIndex]]: ~empty~, [[DFSAncestorIndex]]: ~empty~ }.
+            1. Return Source Text Module Record { [[Realm]]: _realm_, [[Environment]]: ~empty~, [[Namespace]]: ~empty~, [[CycleRoot]]: ~empty~, [[HasTLA]]: _async_, [[AsyncEvaluation]]: *false*, [[TopLevelCapability]]: ~empty~, [[AsyncParentModules]]: &laquo; &raquo;, [[PendingAsyncDependencies]]: ~empty~, [[Status]]: <del>~unlinked~</del><ins>~new~</ins>, [[EvaluationError]]: ~empty~, [[HostDefined]]: _hostDefined_, [[ECMAScriptCode]]: _body_, [[Context]]: ~empty~, [[ImportMeta]]: ~empty~, [[RequestedModules]]: _requestedModules_, [[LoadedModules]]: <ins>a new empty List</ins>, [[ImportEntries]]: _importEntries_, [[LocalExportEntries]]: _localExportEntries_, [[IndirectExportEntries]]: _indirectExportEntries_, [[StarExportEntries]]: _starExportEntries_, [[DFSIndex]]: ~empty~, [[DFSAncestorIndex]]: ~empty~ }.
           </emu-alg>
           <emu-note>
             <p>An implementation may parse module source text and analyse it for Early Error conditions prior to the evaluation of ParseModule for that module source text. However, the reporting of any errors must be deferred until the point where this specification actually performs ParseModule upon that source text.</p>
